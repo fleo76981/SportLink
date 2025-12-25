@@ -102,6 +102,7 @@ export const CreateActivityForm = ({ onCreate, isOpen, onClose }) => {
                                 className="w-full px-6 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
                                 value={formData.time}
                                 onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                onClick={(e) => e.target.showPicker()}
                             />
                         </div>
 
