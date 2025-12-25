@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react()],
-    base: './', // 確保在 GitHub Pages 上能正確讀取資源路徑
+    base: '/SportLink/', // 改為明確的 Repository 名稱路徑
 })

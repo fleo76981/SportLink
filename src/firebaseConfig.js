@@ -12,6 +12,11 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// 檢查環境變數是否已正確載入
+if (!firebaseConfig.apiKey) {
+    console.error("Firebase API Key is missing! 請檢查 GitHub Secrets 是否正確設定。");
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
