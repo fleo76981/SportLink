@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportLink Standalone Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { indigo: { 600: '#4f46e5' } },
+                    borderRadius: { '2rem': '2rem' }
+                }
+            }
+        }
+    </script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDKs (Compatibility Version for CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBC6MN1_AnZnlaJtGk0AVXB4NgFE863US4",
+            authDomain: "sportlink-app.firebaseapp.com",
+            projectId: "sportlink-app",
+            storageBucket: "sportlink-app.firebasestorage.app",
+            messagingSenderId: "381712382654",
+            appId: "1:381712382654:web:db6b4b8846a57db0acfcef"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Constants matching useActivities.js
+        const COLLECTION_PATH = "artifacts/sportlink-demo/public/data/activities";
+
+        // Mock Lucide Component
+        const Icon = ({ name, className }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        // --- Mock Data Case ---
+        // const MOCK_ACTIVITIES = [
+        //     { id: '1', title: '周末熱血羽球', type: '羽球', region: '台北市', location: '大安運動中心', time: '2024-12-28 14:00', fee: '200', maxSpots: 4, currentJoined: 2, creatorId: 'user1', contact: 'Line: badminton_king' },
+        //     { id: '2', title: '早晨慢跑團', type: '跑步', region: '新北市', location: '板橋體育場', time: '2024-12-29 07:00', fee: '0', maxSpots: 10, currentJoined: 10, creatorId: 'user2', contact: '0912-345-678' }
+        // ];
+
+        const Header = ({ onOpenForm }) => (
+            <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <Icon name="trophy" className="text-white w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic">
+                            SportLink
+                        </h1>
+                    </div>
+                    <button
+                        onClick={onOpenForm}
+                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                    >
+                        <Icon name="plus" className="w-5 h-5 mr-2" /> 發布活動
+                    </button>
+                </div>
+            </header>
+        );
+
+        const CreateActivityForm = ({ isOpen, onClose }) => {
+            const [localForm, setLocalForm] = useState({
+                title: '', type: '羽球', region: '台北市', time: '', location: '', fee: '0', maxSpots: '4', contact: ''
+            });
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    const user = auth.currentUser;
+                    if (!user) throw new Error("請先登入");
+
+                    await db.collection(COLLECTION_PATH).add({
+                        ...localForm,
+                        creatorId: user.uid,
+                        currentJoined: 1,
+                        joinedUsers: [user.uid],
+                        status: 'active',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    alert("發布成功！");
+                    onClose();
+                } catch (err) {
+                    alert("發布失敗: " + err.message);
+                }
+            };
+
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300">
+                        <button onClick={onClose} className="absolute right-8 top-8 p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="x" className="w-6 h-6 text-slate-400" /></button>
+                        <h3 className="text-2xl font-black mb-8 text-slate-800 italic">發起新活動</h3>
+                        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">活動名稱</label>
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="如：週六下午熱血羽球" value={localForm.title} onChange={e => setLocalForm({ ...localForm, title: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">運動種類</label>
+                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={localForm.type} onChange={e => setLocalForm({ ...localForm, type: e.target.value })}>
+                                    {['羽球', '桌球', '籃球', '跑步', '健身'].map(t => <option key={t}>{t}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">地區</label>
+                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={localForm.region} onChange={e => setLocalForm({ ...localForm, region: e.target.value })}>
+                                    {['台北市', '新北市', '桃園市', '台中市'].map(r => <option key={r}>{r}</option>)}
+                                </select>
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡方式 (Line/電話)</label>
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" placeholder="例如：Line ID: sport123" value={localForm.contact} onChange={e => setLocalForm({ ...localForm, contact: e.target.value })} />
+                            </div>
+                            <button type="submit" className="col-span-2 mt-4 w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">立即發布</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const Icons = {
+            MapPin: (props) => <Icon name="map-pin" {...props} />,
+            Target: (props) => <Icon name="target" {...props} />,
+            X: (props) => <Icon name="x" {...props} />,
+            Lock: (props) => <Icon name="lock" {...props} />,
+            CheckCircle: (props) => <Icon name="check-circle" {...props} />,
+            Info: (props) => <Icon name="info" {...props} />,
+            LogOut: (props) => <Icon name="log-out" {...props} />
+        };
+
+        const ActivityFilters = ({ selectedRegion, onRegionChange, selectedType, onTypeChange }) => (
+            <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <div className="flex-1 relative">
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none">
+                        <Icons.MapPin className="w-5 h-5" />
+                    </div>
+                    <select
+                        value={selectedRegion}
+                        onChange={(e) => onRegionChange(e.target.value)}
+                        className="w-full pl-14 pr-6 py-4 bg-white border-none rounded-[1.5rem] shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none font-bold text-slate-700 cursor-pointer"
+                    >
+                        {['全部地區', '台北市', '新北市', '桃園市', '台中市'].map(reg => (
+                            <option key={reg} value={reg === '全部地區' ? '' : reg}>{reg}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex-1 relative">
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none">
+                        <Icons.Target className="w-5 h-5" />
+                    </div>
+                    <select
+                        value={selectedType}
+                        onChange={(e) => onTypeChange(e.target.value)}
+                        className="w-full pl-14 pr-6 py-4 bg-white border-none rounded-[1.5rem] shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none font-bold text-slate-700 cursor-pointer"
+                    >
+                        {['全部種類', '羽球', '籃球', '排球', '健身', '跑步'].map(type => (
+                            <option key={type} value={type === '全部種類' ? '' : type}>{type}</option>
+                        ))}
+                    </select>
+                </div>
+                {(selectedRegion || selectedType) && (
+                    <button
+                        onClick={() => { onRegionChange(''); onTypeChange(''); }}
+                        className="px-6 py-4 bg-slate-200 text-slate-600 rounded-[1.5rem] font-bold hover:bg-slate-300 flex items-center justify-center transition-all"
+                    >
+                        <Icons.X className="w-5 h-5 mr-2" /> 清除
+                    </button>
+                )}
+            </div>
+        );
+
+        const AuthForm = ({ onAuthSuccess }) => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError(null);
+                try {
+                    if (isLogin) {
+                        await auth.signInWithEmailAndPassword(email, password);
+                    } else {
+                        await auth.createUserWithEmailAndPassword(email, password);
+                    }
+                    onAuthSuccess();
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 font-sans">
+                    <div className="w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-2xl border border-slate-100">
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-xl mb-4">
+                                <Icon name="trophy" className="text-white w-8 h-8" />
+                            </div>
+                            <h1 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic mb-2">SportLink</h1>
+                            <p className="text-slate-400 font-medium">{isLogin ? "歡迎回來，立即登入" : "加入我們，開始運動"}</p>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <input required type="email" placeholder="電子郵件" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
+                            <input required type="password" placeholder="密碼" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            {error && <div className="text-red-500 text-xs font-bold px-2">{error}</div>}
+                            <button disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg disabled:opacity-50">
+                                {loading ? "處理中..." : (isLogin ? "登入" : "註冊")}
+                            </button>
+                        </form>
+                        <div className="mt-8 pt-8 border-t border-slate-100 text-center">
+                            <button onClick={() => setIsLogin(!isLogin)} className="text-indigo-600 font-black hover:underline">
+                                {isLogin ? "沒有帳號？立即註冊" : "已有帳號？返回登入"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [activities, setActivities] = useState([]);
+            const [isFormOpen, setIsFormOpen] = useState(false);
+            const [selectedRegion, setSelectedRegion] = useState('');
+            const [selectedType, setSelectedType] = useState('');
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const unsubscribeAuth = auth.onAuthStateChanged(u => {
+                    setUser(u);
+                    setLoading(false);
+                });
+
+                const unsubscribeData = db.collection(COLLECTION_PATH)
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setActivities(data);
+                    });
+
+                return () => {
+                    unsubscribeAuth();
+                    unsubscribeData();
+                };
+            }, []);
+
+            const filteredActivities = useMemo(() => {
+                return activities.filter(act => {
+                    const matchRegion = !selectedRegion || act.region === selectedRegion;
+                    const matchType = !selectedType || act.type === selectedType;
+                    return matchRegion && matchType;
+                });
+            }, [activities, selectedRegion, selectedType]);
+
+            const handleJoin = async (id) => {
+                if (!user) return alert("請先登入");
+                try {
+                    const docRef = db.collection(COLLECTION_PATH).doc(id);
+                    await db.runTransaction(async (transaction) => {
+                        const doc = await transaction.get(docRef);
+                        const data = doc.data();
+                        if (data.currentJoined >= data.maxSpots) throw new Error("名額已滿");
+                        if (data.joinedUsers?.includes(user.uid)) throw new Error("您已報名過了");
+
+                        transaction.update(docRef, {
+                            currentJoined: data.currentJoined + 1,
+                            joinedUsers: [...(data.joinedUsers || []), user.uid]
+                        });
+                    });
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+
+            const handleClose = async (id) => {
+                if (!confirm("確定要提早結束此活動嗎？")) return;
+                try {
+                    await db.collection(COLLECTION_PATH).doc(id).update({ status: 'closed' });
+                } catch (err) {
+                    alert("操作失敗: " + err.message);
+                }
+            };
+
+            if (loading) return <div className="min-h-screen flex items-center justify-center font-black italic text-indigo-600 animate-pulse text-2xl">SportLink Loading...</div>;
+            if (!user) return <AuthForm onAuthSuccess={() => { }} />;
+
+            return (
+                <div className="min-h-screen pt-28 pb-12 px-6">
+                    <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+                        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between font-sans">
+                            <div className="flex items-center space-x-2">
+                                <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"><Icon name="trophy" className="text-white w-6 h-6" /></div>
+                                <h1 className="text-2xl font-black italic bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent">SportLink</h1>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <button onClick={() => setIsFormOpen(true)} className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all"><Icon name="plus" className="w-5 h-5 mr-1" /> 發布</button>
+                                <button onClick={() => auth.signOut()} className="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 hover:bg-slate-100"><Icon name="log-out" className="w-5 h-5 text-slate-400" /></button>
+                            </div>
+                        </div>
+                    </header>
+                    <main className="max-w-7xl mx-auto font-sans">
+                        <div className="mb-10">
+                            <h2 className="text-3xl font-black text-slate-900 mb-2">探索鄰近活動</h2>
+                            <p className="text-slate-500 font-medium italic">Hi, {user.email}! 目前連線到真實 Firebase 數據庫。</p>
+                        </div>
+                        <ActivityFilters selectedRegion={selectedRegion} onRegionChange={setSelectedRegion} selectedType={selectedType} onTypeChange={setSelectedType} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredActivities.map(act => {
+                                const isFull = act.currentJoined >= act.maxSpots;
+                                const isClosed = act.status === 'closed';
+                                const hasJoined = act.joinedUsers?.includes(user.uid);
+                                const isCreator = user.uid === act.creatorId;
+                                return (
+                                    <div key={act.id} className={`glass-card rounded-[2rem] p-6 shadow-xl flex flex-col relative overflow-hidden transition-all ${isClosed ? 'opacity-60 grayscale-[0.3]' : ''}`}>
+                                        {isClosed && <div className="absolute top-0 right-0 bg-slate-800 text-white px-6 py-2 rounded-bl-3xl font-black text-[10px] z-10">活動已結束</div>}
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase">{act.type}</span>
+                                            <div className="flex items-center text-slate-400 text-xs font-bold"><Icon name="users" className="w-4 h-4 mr-1 text-indigo-400" /><span>{act.currentJoined} / {act.maxSpots}</span></div>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">{act.title}</h3>
+                                        <div className="space-y-1 mb-6 flex-grow text-xs text-slate-500 font-medium">
+                                            <div className="flex items-center"><Icon name="map-pin" className="w-3.5 h-3.5 mr-2 text-indigo-500" /> {act.region}</div>
+                                            <div className="flex items-center"><Icon name="info" className="w-3.5 h-3.5 mr-2 text-indigo-500" /> 聯絡：{act.contact}</div>
+                                        </div>
+                                        <div className="mt-auto space-y-3">
+                                            {isCreator && !isClosed && <button onClick={() => handleClose(act.id)} className="w-full py-3.5 bg-slate-800 text-white rounded-2xl font-bold text-sm hover:bg-slate-900 transition-all">提早關閉活動</button>}
+                                            {isClosed ? <div className="w-full py-3.5 bg-slate-100 text-slate-400 rounded-2xl font-bold text-center text-sm border border-slate-200">已截止</div> : hasJoined ? <div className="bg-green-50 text-green-600 py-3.5 rounded-2xl text-center font-bold text-sm border border-green-200">✓ 已報名</div> : <button onClick={() => handleJoin(act.id)} disabled={isFull} className={`w-full py-3.5 rounded-2xl font-bold text-sm transition-all ${isFull ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-neon-indigo shadow-lg shadow-indigo-100 active:scale-95 text-white'}`}>{isFull ? "額滿" : "立即報名"}</button>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {filteredActivities.length === 0 && <div className="col-span-full py-20 text-center text-slate-300 font-black italic text-xl border-4 border-dashed border-slate-100 rounded-[3rem]">目前尚無活動...</div>}
+                        </div>
+                    </main>
+                    <CreateActivityForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
