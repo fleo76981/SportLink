@@ -7,23 +7,40 @@ import { CreateActivityForm } from './components/CreateActivityForm';
 import { AuthForm } from './components/AuthForm';
 import { Plus, Trophy, Loader2, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
 
-const Header = ({ onOpenForm }) => {
+const Header = ({ onOpenForm, view, onViewChange }) => {
     const { logout, user } = useAuth();
     return (
         <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                        <Trophy className="text-white w-6 h-6" />
+                <div className="flex items-center space-x-8">
+                    <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onViewChange('upcoming')}>
+                        <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <Trophy className="text-white w-6 h-6" />
+                        </div>
+                        <div className="hidden sm:block">
+                            <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic leading-tight">
+                                SportLink
+                            </h1>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
+                                {user?.email || "Connect & Play"}
+                            </p>
+                        </div>
                     </div>
-                    <div className="hidden sm:block">
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic leading-tight">
-                            SportLink
-                        </h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
-                            {user?.email || "Connect & Play"}
-                        </p>
-                    </div>
+
+                    <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl">
+                        <button
+                            onClick={() => onViewChange('upcoming')}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'upcoming' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            正在進行
+                        </button>
+                        <button
+                            onClick={() => onViewChange('history')}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            歷史紀錄
+                        </button>
+                    </nav>
                 </div>
 
                 <div className="flex items-center space-x-4">
@@ -50,18 +67,26 @@ const AppContent = () => {
     const { user, loading: authLoading, error: authError } = useAuth();
     const { activities, loading: activitiesLoading, createActivity, joinActivity, closeActivity } = useActivities();
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [view, setView] = useState('upcoming'); // 'upcoming' | 'history'
 
     // Filtering states
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedType, setSelectedType] = useState('');
 
     const filteredActivities = useMemo(() => {
+        const now = new Date();
         return activities.filter(activity => {
             const matchRegion = !selectedRegion || activity.region === selectedRegion;
             const matchType = !selectedType || activity.type === selectedType;
-            return matchRegion && matchType;
+
+            // Time filtering
+            const activityDate = new Date(activity.time);
+            const isPast = activityDate < now;
+            const matchTime = view === 'upcoming' ? !isPast : isPast;
+
+            return matchRegion && matchType && matchTime;
         });
-    }, [activities, selectedRegion, selectedType]);
+    }, [activities, selectedRegion, selectedType, view]);
 
     if (authLoading) {
         return (
@@ -78,12 +103,18 @@ const AppContent = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-6 animate-in fade-in duration-700">
-            <Header onOpenForm={() => setIsFormOpen(true)} />
+            <Header onOpenForm={() => setIsFormOpen(true)} view={view} onViewChange={setView} />
 
             <main className="max-w-7xl mx-auto">
-                <div className="mb-10">
-                    <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">探索鄰近活動</h2>
-                    <p className="text-slate-500 font-medium">加入運動行列，結交新球友！</p>
+                <div className="mb-10 flex items-end justify-between">
+                    <div>
+                        <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
+                            {view === 'upcoming' ? '探索鄰近活動' : '歷史活動回顧'}
+                        </h2>
+                        <p className="text-slate-500 font-medium">
+                            {view === 'upcoming' ? '加入運動行列，結交新球友！' : '查看已結束的活動記錄'}
+                        </p>
+                    </div>
                 </div>
 
                 <ActivityFilters

@@ -84,23 +84,41 @@
         //     { id: '2', title: '早晨慢跑團', type: '跑步', region: '新北市', location: '板橋體育場', time: '2024-12-29 07:00', fee: '0', maxSpots: 10, currentJoined: 10, creatorId: 'user2', contact: '0912-345-678' }
         // ];
 
-        const Header = ({ onOpenForm }) => (
+        const Header = ({ onOpenForm, view, onViewChange }) => (
             <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                            <Icon name="trophy" className="text-white w-6 h-6" />
+                    <div className="flex items-center space-x-8">
+                        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onViewChange('upcoming')}>
+                            <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                                <Icon name="trophy" className="text-white w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic">
+                                SportLink
+                            </h1>
                         </div>
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic">
-                            SportLink
-                        </h1>
+                        <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl">
+                            <button
+                                onClick={() => onViewChange('upcoming')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'upcoming' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                正在進行
+                            </button>
+                            <button
+                                onClick={() => onViewChange('history')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                歷史紀錄
+                            </button>
+                        </nav>
                     </div>
-                    <button
-                        onClick={onOpenForm}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all shadow-md active:scale-95"
-                    >
-                        <Icon name="plus" className="w-5 h-5 mr-2" /> 發布活動
-                    </button>
+                    <div className="flex items-center space-x-4">
+                        <button onClick={onOpenForm} className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                            <Icon name="plus" className="w-5 h-5 mr-2" /> 發布
+                        </button>
+                        <button onClick={() => auth.signOut()} className="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 hover:bg-slate-100">
+                            <Icon name="log-out" className="w-5 h-5 text-slate-400" />
+                        </button>
+                    </div>
                 </div>
             </header>
         );
@@ -277,6 +295,7 @@
             const [selectedRegion, setSelectedRegion] = useState('');
             const [selectedType, setSelectedType] = useState('');
             const [loading, setLoading] = useState(true);
+            const [view, setView] = useState('upcoming'); // 'upcoming' | 'history'
 
             useEffect(() => {
                 const unsubscribeAuth = auth.onAuthStateChanged(u => {
@@ -298,12 +317,19 @@
             }, []);
 
             const filteredActivities = useMemo(() => {
+                const now = new Date();
                 return activities.filter(act => {
                     const matchRegion = !selectedRegion || act.region === selectedRegion;
                     const matchType = !selectedType || act.type === selectedType;
-                    return matchRegion && matchType;
+
+                    // Time filtering
+                    const activityDate = new Date(act.time);
+                    const isPast = activityDate < now;
+                    const matchTime = view === 'upcoming' ? !isPast : isPast;
+
+                    return matchRegion && matchType && matchTime;
                 });
-            }, [activities, selectedRegion, selectedType]);
+            }, [activities, selectedRegion, selectedType, view]);
 
             const handleJoin = async (id) => {
                 if (!user) return alert("請先登入");
@@ -339,22 +365,15 @@
 
             return (
                 <div className="min-h-screen pt-28 pb-12 px-6">
-                    <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
-                        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between font-sans">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg"><Icon name="trophy" className="text-white w-6 h-6" /></div>
-                                <h1 className="text-2xl font-black italic bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent">SportLink</h1>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <button onClick={() => setIsFormOpen(true)} className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all"><Icon name="plus" className="w-5 h-5 mr-1" /> 發布</button>
-                                <button onClick={() => auth.signOut()} className="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 hover:bg-slate-100"><Icon name="log-out" className="w-5 h-5 text-slate-400" /></button>
-                            </div>
-                        </div>
-                    </header>
+                    <Header onOpenForm={() => setIsFormOpen(true)} view={view} onViewChange={setView} />
                     <main className="max-w-7xl mx-auto font-sans">
                         <div className="mb-10">
-                            <h2 className="text-3xl font-black text-slate-900 mb-2">探索鄰近活動</h2>
-                            <p className="text-slate-500 font-medium italic">Hi, {user.email}! 目前連線到真實 Firebase 數據庫。</p>
+                            <h2 className="text-3xl font-black text-slate-900 mb-2">
+                                {view === 'upcoming' ? '探索鄰近活動' : '歷史活動回顧'}
+                            </h2>
+                            <p className="text-slate-500 font-medium italic">
+                                {view === 'upcoming' ? `Hi, ${user.email}! 目前連線到真實 Firebase 數據庫。` : '查看已結束的活動記錄'}
+                            </p>
                         </div>
                         <ActivityFilters selectedRegion={selectedRegion} onRegionChange={setSelectedRegion} selectedType={selectedType} onTypeChange={setSelectedType} />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
