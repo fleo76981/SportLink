@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthProvider';
-import { LogIn, UserPlus, Mail, Lock, Loader2, Trophy } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, Loader2, Trophy, User } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,6 +12,7 @@ export const AuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [nickname, setNickname] = useState('');
     const [localLoading, setLocalLoading] = useState(false);
     const { login, register, error } = useAuth();
 
@@ -22,10 +23,10 @@ export const AuthForm = () => {
             if (isLogin) {
                 await login(email, password);
             } else {
-                await register(email, password);
+                await register(email, password, nickname);
             }
         } catch (err) {
-            // Error is handled in context and displayed via error state
+            // Error handling in context
         } finally {
             setLocalLoading(false);
         }
@@ -47,6 +48,22 @@ export const AuthForm = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {!isLogin && (
+                        <div className="relative group">
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors">
+                                <User className="w-5 h-5" />
+                            </div>
+                            <input
+                                required
+                                type="text"
+                                placeholder="怎麼稱呼您？(暱稱)"
+                                className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-medium"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                            />
+                        </div>
+                    )}
+
                     <div className="relative group">
                         <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                             <Mail className="w-5 h-5" />

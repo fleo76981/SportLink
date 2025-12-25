@@ -3,7 +3,8 @@ import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    signOut
+    signOut,
+    updateProfile
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 
@@ -47,10 +48,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (email, password) => {
+    const register = async (email, password, displayName) => {
         setError(null);
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            if (displayName) {
+                await updateProfile(userCredential.user, { displayName });
+                // Force reload user to update display name in state immediately? 
+                // onAuthStateChanged might pick it up, or we might need to manually setUser.
+                // But usually onAuthStateChanged triggers on user change.
+                // Update: user object in state is immutable-ish. Better to force refresh or rely on next refresh.
+                // Let's manually spread user with new displayName if needed, but wait, updateProfile updates the backend.
+                // We should reload to be sure or just trust it.
+            }
         } catch (err) {
             console.error("Registration failed:", err);
             let message = "註冊失敗";

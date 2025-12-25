@@ -84,44 +84,32 @@
         //     { id: '2', title: '早晨慢跑團', type: '跑步', region: '新北市', location: '板橋體育場', time: '2024-12-29 07:00', fee: '0', maxSpots: 10, currentJoined: 10, creatorId: 'user2', contact: '0912-345-678' }
         // ];
 
-        const Header = ({ onOpenForm, view, onViewChange }) => (
-            <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onViewChange('upcoming')}>
-                            <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                                <Icon name="trophy" className="text-white w-6 h-6" />
+        const Header = ({ onOpenForm, view, onViewChange, user }) => {
+            const logout = () => auth.signOut();
+            return (
+                <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+                    <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                        <div className="flex items-center space-x-8">
+                            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onViewChange('upcoming')}>
+                                <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200"><Icon name="trophy" className="text-white w-6 h-6" /></div>
+                                <div className="hidden sm:block">
+                                    <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic leading-tight">SportLink</h1>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">{user?.displayName || user?.email || "Connect & Play"}</p>
+                                </div>
                             </div>
-                            <h1 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent italic">
-                                SportLink
-                            </h1>
+                            <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl">
+                                <button onClick={() => onViewChange('upcoming')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'upcoming' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>正在進行</button>
+                                <button onClick={() => onViewChange('history')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>歷史紀錄</button>
+                            </nav>
                         </div>
-                        <nav className="hidden md:flex bg-slate-100 p-1 rounded-xl">
-                            <button
-                                onClick={() => onViewChange('upcoming')}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'upcoming' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                正在進行
-                            </button>
-                            <button
-                                onClick={() => onViewChange('history')}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                歷史紀錄
-                            </button>
-                        </nav>
+                        <div className="flex items-center space-x-4">
+                            <button onClick={onOpenForm} className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all shadow-md active:scale-95"><Icon name="plus" className="w-5 h-5 mr-1" /><span className="hidden xs:inline">發布活動</span></button>
+                            <button onClick={logout} className="p-2.5 bg-slate-100 text-slate-500 rounded-2xl hover:bg-slate-200 transition-all border border-slate-200" title="登出"><Icon name="log-out" className="w-5 h-5" /></button>
+                        </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <button onClick={onOpenForm} className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center hover:bg-indigo-700 transition-all shadow-md active:scale-95">
-                            <Icon name="plus" className="w-5 h-5 mr-2" /> 發布
-                        </button>
-                        <button onClick={() => auth.signOut()} className="p-2.5 bg-slate-50 rounded-2xl border border-slate-200 hover:bg-slate-100">
-                            <Icon name="log-out" className="w-5 h-5 text-slate-400" />
-                        </button>
-                    </div>
-                </div>
-            </header>
-        );
+                </header>
+            );
+        };
 
         const CreateActivityForm = ({ isOpen, onClose }) => {
             const [localForm, setLocalForm] = useState({
@@ -192,7 +180,12 @@
             CheckCircle: (props) => <Icon name="check-circle" {...props} />,
             Info: (props) => <Icon name="info" {...props} />,
             LogOut: (props) => <Icon name="log-out" {...props} />,
-            Trash2: (props) => <Icon name="trash-2" {...props} />
+            Trash2: (props) => <Icon name="trash-2" {...props} />,
+            Pencil: (props) => <Icon name="pencil" {...props} />,
+            User: (props) => <Icon name="user" {...props} />,
+            UserPlus: (props) => <Icon name="user-plus" {...props} />,
+            LogIn: (props) => <Icon name="log-in" {...props} />,
+            Mail: (props) => <Icon name="mail" {...props} />
         };
 
         const ActivityFilters = ({ selectedRegion, onRegionChange, selectedType, onTypeChange }) => (
@@ -240,6 +233,7 @@
             const [isLogin, setIsLogin] = useState(true);
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
+            const [nickname, setNickname] = useState('');
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
 
@@ -251,7 +245,10 @@
                     if (isLogin) {
                         await auth.signInWithEmailAndPassword(email, password);
                     } else {
-                        await auth.createUserWithEmailAndPassword(email, password);
+                        const cred = await auth.createUserWithEmailAndPassword(email, password);
+                        if (nickname) {
+                            await cred.user.updateProfile({ displayName: nickname });
+                        }
                     }
                     onAuthSuccess();
                 } catch (err) {
@@ -272,17 +269,30 @@
                             <p className="text-slate-400 font-medium">{isLogin ? "歡迎回來，立即登入" : "加入我們，開始運動"}</p>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <input required type="email" placeholder="電子郵件" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input required type="password" placeholder="密碼" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={password} onChange={(e) => setPassword(e.target.value)} />
-                            {error && <div className="text-red-500 text-xs font-bold px-2">{error}</div>}
-                            <button disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-lg disabled:opacity-50">
-                                {loading ? "處理中..." : (isLogin ? "登入" : "註冊")}
+                            {!isLogin && (
+                                <div className="relative group">
+                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors"><Icons.User className="w-5 h-5" /></div>
+                                    <input required type="text" placeholder="怎麼稱呼您？(暱稱)" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-medium" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+                                </div>
+                            )}
+                            <div className="relative group">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors"><Icons.Mail className="w-5 h-5" /></div>
+                                <input required type="email" placeholder="電子郵件" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-medium" value={email} onChange={(e) => setEmail(e.target.value)} />
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors"><Icons.Lock className="w-5 h-5" /></div>
+                                <input required type="password" placeholder="密碼" className="w-full pl-14 pr-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-medium" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            </div>
+                            {error && <div className="text-rose-500 text-sm font-bold bg-rose-50 px-4 py-3 rounded-xl border border-rose-100 flex items-center"><div className="w-2 h-2 bg-rose-500 rounded-full mr-2 animate-pulse" />{error}</div>}
+                            <button type="submit" disabled={loading} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center active:scale-95 disabled:opacity-50">
+                                {loading ? "Loading..." : isLogin ? <><Icons.LogIn className="w-5 h-5 mr-2" /> 登入</> : <><Icons.UserPlus className="w-5 h-5 mr-2" /> 註冊</>}
                             </button>
                         </form>
                         <div className="mt-8 pt-8 border-t border-slate-100 text-center">
-                            <button onClick={() => setIsLogin(!isLogin)} className="text-indigo-600 font-black hover:underline">
-                                {isLogin ? "沒有帳號？立即註冊" : "已有帳號？返回登入"}
-                            </button>
+                            <p className="text-slate-400 font-medium">
+                                {isLogin ? "還沒有帳號嗎？" : "已經有帳號了？"}
+                                <button onClick={() => setIsLogin(!isLogin)} className="ml-2 text-indigo-600 font-black hover:underline underline-offset-4">{isLogin ? "立即註冊" : "返回登入"}</button>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -406,14 +416,14 @@
 
             return (
                 <div className="min-h-screen pt-28 pb-12 px-6">
-                    <Header onOpenForm={handleOpenCreate} view={view} onViewChange={setView} />
+                    <Header onOpenForm={handleOpenCreate} view={view} onViewChange={setView} user={user} />
                     <main className="max-w-7xl mx-auto font-sans">
                         <div className="mb-10">
                             <h2 className="text-3xl font-black text-slate-900 mb-2">
                                 {view === 'upcoming' ? '探索鄰近活動' : '歷史活動回顧'}
                             </h2>
                             <p className="text-slate-500 font-medium italic">
-                                {view === 'upcoming' ? `Hi, ${user.email}! 目前連線到真實 Firebase 數據庫。` : '查看已結束的活動記錄'}
+                                {view === 'upcoming' ? `Hi, ${user.displayName || user.email}! 目前連線到真實 Firebase 數據庫。` : '查看已結束的活動記錄'}
                             </p>
                         </div>
                         <ActivityFilters selectedRegion={selectedRegion} onRegionChange={setSelectedRegion} selectedType={selectedType} onTypeChange={setSelectedType} />
@@ -460,6 +470,11 @@
                                 );
                             })}
                             {filteredActivities.length === 0 && <div className="col-span-full py-20 text-center text-slate-300 font-black italic text-xl border-4 border-dashed border-slate-100 rounded-[3rem]">目前尚無活動...</div>}
+                        </div>
+                        <div className="mt-24 text-center">
+                            <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6" />
+                            <p className="text-slate-400 font-bold text-sm">© 2024 SportLink · 精誠合作，連動你我</p>
+
                         </div>
                     </main>
                     <CreateActivityForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} onSubmit={handleCreateOrUpdate} initialData={editingActivity} />

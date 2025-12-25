@@ -22,7 +22,7 @@ const Header = ({ onOpenForm, view, onViewChange }) => {
                                 SportLink
                             </h1>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">
-                                {user?.email || "Connect & Play"}
+                                {user?.displayName || user?.email || "Connect & Play"}
                             </p>
                         </div>
                     </div>
@@ -171,14 +171,7 @@ const AppContent = () => {
             <footer className="mt-24 text-center">
                 <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6" />
                 <p className="text-slate-400 font-bold text-sm">© 2024 SportLink · 精誠合作，連動你我</p>
-                <div className="mt-4 flex justify-center space-x-2">
-                    <span className="bg-white border border-slate-200 text-slate-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                        UID: {user.uid.substring(0, 8)}
-                    </span>
-                    <span className="bg-indigo-50 border border-indigo-100 text-indigo-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                        {user.email}
-                    </span>
-                </div>
+
             </footer>
         </div>
     );
