@@ -111,61 +111,95 @@
             );
         };
 
-        const CreateActivityForm = ({ isOpen, onClose }) => {
+        const CreateActivityForm = ({ isOpen, onClose, onSubmit, initialData }) => {
             const [localForm, setLocalForm] = useState({
-                title: '', type: '羽球', region: '台北市', time: '', location: '', fee: '0', maxSpots: '4', contact: ''
+                title: '', type: '羽球', region: '台北市', contactName: '', time: '', location: '', fee: '0', maxSpots: '4', contact: ''
             });
+
+            // Reset/Prefill form when opened
+            useEffect(() => {
+                if (isOpen) {
+                    if (initialData) {
+                        setLocalForm({
+                            title: initialData.title || '',
+                            type: initialData.type || '羽球',
+                            region: initialData.region || '台北市',
+                            contactName: initialData.contactName || '',
+                            time: initialData.time || '',
+                            location: initialData.location || '',
+                            fee: initialData.fee || '0',
+                            maxSpots: initialData.maxSpots || '4',
+                            contact: initialData.contact || ''
+                        });
+                    } else {
+                        const user = auth.currentUser;
+                        setLocalForm({
+                            title: '', type: '羽球', region: '台北市',
+                            contactName: user?.displayName || user?.email?.split('@')[0] || '',
+                            time: '', location: '', fee: '0', maxSpots: '4', contact: ''
+                        });
+                    }
+                }
+            }, [isOpen, initialData]);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 try {
-                    const user = auth.currentUser;
-                    if (!user) throw new Error("請先登入");
-
-                    await db.collection(COLLECTION_PATH).add({
-                        ...localForm,
-                        creatorId: user.uid,
-                        currentJoined: 1,
-                        joinedUsers: [user.uid],
-                        status: 'active',
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-
-                    alert("發布成功！");
+                    await onSubmit(localForm);
                     onClose();
                 } catch (err) {
-                    alert("發布失敗: " + err.message);
+                    alert("操作失敗: " + err.message);
                 }
             };
 
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300">
+                    <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
                         <button onClick={onClose} className="absolute right-8 top-8 p-2 hover:bg-slate-100 rounded-full transition-colors"><Icon name="x" className="w-6 h-6 text-slate-400" /></button>
-                        <h3 className="text-2xl font-black mb-8 text-slate-800 italic">發起新活動</h3>
+                        <h3 className="text-2xl font-black mb-8 text-slate-800 italic">{initialData ? '編輯活動內容' : '發起新活動'}</h3>
                         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-5">
                             <div className="col-span-2">
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">活動名稱</label>
-                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="如：週六下午熱血羽球" value={localForm.title} onChange={e => setLocalForm({ ...localForm, title: e.target.value })} onClick={(e) => e.target.showPicker()} />
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-slate-700 placeholder-slate-300" placeholder="如：週六下午熱血羽球" value={localForm.title} onChange={e => setLocalForm({ ...localForm, title: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">運動種類</label>
-                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={localForm.type} onChange={e => setLocalForm({ ...localForm, type: e.target.value })}>
+                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700" value={localForm.type} onChange={e => setLocalForm({ ...localForm, type: e.target.value })}>
                                     {['羽球', '桌球', '籃球', '跑步', '健身'].map(t => <option key={t}>{t}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">地區</label>
-                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={localForm.region} onChange={e => setLocalForm({ ...localForm, region: e.target.value })}>
+                                <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700" value={localForm.region} onChange={e => setLocalForm({ ...localForm, region: e.target.value })}>
                                     {['台北市', '新北市', '桃園市', '台中市'].map(r => <option key={r}>{r}</option>)}
                                 </select>
                             </div>
                             <div className="col-span-2">
-                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡方式 (Line/電話)</label>
-                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" placeholder="例如：Line ID: sport123" value={localForm.contact} onChange={e => setLocalForm({ ...localForm, contact: e.target.value })} />
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">時間</label>
+                                <input
+                                    required
+                                    type="datetime-local"
+                                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-bold text-slate-700"
+                                    value={localForm.time}
+                                    onChange={e => setLocalForm({ ...localForm, time: e.target.value })}
+                                />
                             </div>
-                            <button type="submit" className="col-span-2 mt-4 w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">立即發布</button>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">詳細地點</label>
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 placeholder-slate-300" placeholder="例如：大安運動中心" value={localForm.location} onChange={e => setLocalForm({ ...localForm, location: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡人稱呼 (預設為您的暱稱)</label>
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 placeholder-slate-300" placeholder="如何稱呼您" value={localForm.contactName} onChange={e => setLocalForm({ ...localForm, contactName: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡方式 (Line/電話)</label>
+                                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 placeholder-slate-300" placeholder="例如：Line ID: sport123" value={localForm.contact} onChange={e => setLocalForm({ ...localForm, contact: e.target.value })} />
+                            </div>
+                            <button type="submit" className="col-span-2 mt-4 w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
+                                {initialData ? "儲存修改" : "立即發布"}
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -443,7 +477,12 @@
                                         <h3 className="text-xl font-bold text-slate-800 mb-2">{act.title}</h3>
                                         <div className="space-y-1 mb-6 flex-grow text-xs text-slate-500 font-medium">
                                             <div className="flex items-center"><Icon name="map-pin" className="w-3.5 h-3.5 mr-2 text-indigo-500" /> {act.region}</div>
-                                            <div className="flex items-center"><Icon name="info" className="w-3.5 h-3.5 mr-2 text-indigo-500" /> 聯絡：{act.contact}</div>
+                                            <div className="flex items-center"><Icon name="info" className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+                                                <span className="truncate">
+                                                    {act.contactName && <span className="font-bold text-indigo-600 mr-1">{act.contactName}:</span>}
+                                                    {act.contact}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="mt-auto space-y-3">
                                             {isCreator ? (

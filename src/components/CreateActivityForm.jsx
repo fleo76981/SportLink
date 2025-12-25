@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthProvider';
 
 export const CreateActivityForm = ({ isOpen, onClose, onSubmit, initialData = null }) => {
+    const { user } = useAuth();
     const defaultForm = {
         title: '',
         type: '羽球',
         region: '台北市',
+        contactName: '',
         time: '',
         location: '',
         fee: '0',
@@ -23,6 +26,7 @@ export const CreateActivityForm = ({ isOpen, onClose, onSubmit, initialData = nu
                     title: initialData.title || '',
                     type: initialData.type || '羽球',
                     region: initialData.region || '台北市',
+                    contactName: initialData.contactName || '',
                     time: initialData.time || '',
                     location: initialData.location || '',
                     fee: initialData.fee || '0',
@@ -30,10 +34,13 @@ export const CreateActivityForm = ({ isOpen, onClose, onSubmit, initialData = nu
                     contact: initialData.contact || ''
                 });
             } else {
-                setFormData(defaultForm);
+                setFormData({
+                    ...defaultForm,
+                    contactName: user?.displayName || user?.email?.split('@')[0] || ''
+                });
             }
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialData, user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -152,7 +159,18 @@ export const CreateActivityForm = ({ isOpen, onClose, onSubmit, initialData = nu
                         />
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡人稱呼 (預設為您的暱稱)</label>
+                        <input
+                            required
+                            className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-slate-700 placeholder-slate-300"
+                            placeholder="如何稱呼您"
+                            value={formData.contactName}
+                            onChange={e => setFormData({ ...formData, contactName: e.target.value })}
+                        />
+                    </div>
+
+                    <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">聯絡方式 (Line/電話)</label>
                         <input
                             required

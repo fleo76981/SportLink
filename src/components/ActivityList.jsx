@@ -109,7 +109,10 @@ export const ActivityList = ({ activities, onJoin, onCloseActivity, onDeleteActi
                                     <Info className="w-3 h-3 mr-1" /> 團主聯絡方式
                                 </div>
                                 <div className="text-sm font-bold text-indigo-700">
-                                    {activity.contact || "暫無提供"}
+                                    {activity.contactName && <span className="mr-2 text-indigo-500">{activity.contactName} :</span>}
+                                    <span onClick={() => { navigator.clipboard.writeText(activity.contact); alert("已複製聯絡方式！") }} className="cursor-pointer hover:underline underline-offset-2" title="點擊複製">
+                                        {activity.contact || "暫無提供"}
+                                    </span>
                                 </div>
                             </div>
 
