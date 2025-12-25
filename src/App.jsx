@@ -65,9 +65,10 @@ const Header = ({ onOpenForm, view, onViewChange }) => {
 
 const AppContent = () => {
     const { user, loading: authLoading, error: authError } = useAuth();
-    const { activities, loading: activitiesLoading, createActivity, joinActivity, closeActivity } = useActivities();
+    const { activities, loading: activitiesLoading, createActivity, joinActivity, closeActivity, deleteActivity, updateActivity } = useActivities();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [view, setView] = useState('upcoming'); // 'upcoming' | 'history'
+    const [editingActivity, setEditingActivity] = useState(null);
 
     // Filtering states
     const [selectedRegion, setSelectedRegion] = useState('');
@@ -88,6 +89,27 @@ const AppContent = () => {
         });
     }, [activities, selectedRegion, selectedType, view]);
 
+    const handleCreateOrUpdate = async (data) => {
+        if (editingActivity) {
+            await updateActivity(editingActivity.id, data);
+            alert("修改成功！");
+        } else {
+            await createActivity(data);
+            alert("發布成功！");
+        }
+        setEditingActivity(null); // Reset after submit
+    };
+
+    const handleEditClick = (activity) => {
+        setEditingActivity(activity);
+        setIsFormOpen(true);
+    };
+
+    const handleOpenCreate = () => {
+        setEditingActivity(null);
+        setIsFormOpen(true);
+    };
+
     if (authLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
@@ -103,7 +125,7 @@ const AppContent = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-6 animate-in fade-in duration-700">
-            <Header onOpenForm={() => setIsFormOpen(true)} view={view} onViewChange={setView} />
+            <Header onOpenForm={handleOpenCreate} view={view} onViewChange={setView} />
 
             <main className="max-w-7xl mx-auto">
                 <div className="mb-10 flex items-end justify-between">
@@ -133,6 +155,8 @@ const AppContent = () => {
                         activities={filteredActivities}
                         onJoin={joinActivity}
                         onCloseActivity={closeActivity}
+                        onDeleteActivity={deleteActivity}
+                        onEditActivity={handleEditClick}
                     />
                 )}
             </main>
@@ -140,7 +164,8 @@ const AppContent = () => {
             <CreateActivityForm
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
-                onCreate={createActivity}
+                onSubmit={handleCreateOrUpdate}
+                initialData={editingActivity}
             />
 
             <footer className="mt-24 text-center">

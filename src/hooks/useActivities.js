@@ -8,7 +8,8 @@ import {
     runTransaction,
     doc,
     orderBy,
-    updateDoc
+    updateDoc,
+    deleteDoc
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from '../contexts/AuthProvider';
@@ -98,5 +99,17 @@ export const useActivities = () => {
         return await updateDoc(activityRef, { status: 'closed' });
     }, [user]);
 
-    return { activities, loading, createActivity, joinActivity, closeActivity };
+    const deleteActivity = useCallback(async (activityId) => {
+        if (!user) throw new Error("Must be logged in to delete activity");
+        const activityRef = doc(db, COLLECTION_PATH, activityId);
+        return await deleteDoc(activityRef);
+    }, [user]);
+
+    const updateActivity = useCallback(async (activityId, data) => {
+        if (!user) throw new Error("Must be logged in to update activity");
+        const activityRef = doc(db, COLLECTION_PATH, activityId);
+        return await updateDoc(activityRef, data);
+    }, [user]);
+
+    return { activities, loading, createActivity, joinActivity, closeActivity, deleteActivity, updateActivity };
 };
